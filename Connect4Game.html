@@ -1,0 +1,176 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<body onload="InitilizeStyles()" onkeydown="MovePrePlayMemeByArrows()" style="background-color:black">
+    <div id="gameFrame">
+        <img src="1" id="prePlay" />
+        <img src="Board.png" alt="Alternate Text" id="brd" />
+        <audio id="DroppingSD">
+            <source src="MemeDropping.wav" type="audio/mpeg">
+            <source src="MemeDropping.ogg" type="audio/ogg">
+        </audio>
+    </div>
+    <div class="slidecontainer">
+        <input type="range" min="20" max="200" value="100" class="slider" id="myRange" onchange="ChangeGameScale()">
+    </div>
+    <script>
+        //BackEnd Init
+        var CurrentColumn = 0;
+        var BackBoard = [];
+        for (var i = 0; i < 7; i++) BackBoard[i] = [];
+        var droppedMeme;
+        var row;
+        var mover;
+        var cawitch = 0;
+
+        //Getting Game ELements
+        var Board = document.getElementById("brd");
+        var GameFrame = document.getElementById("gameFrame");
+        var PrePlayMeme = document.getElementById("prePlay");
+        var columns = gameFrame.getElementsByTagName("div");
+        var DroppingSound = document.getElementById("DroppingSD");
+        var sldrGameScale = document.getElementById("myRange");
+
+        //Game Elements Dimensions
+        var GameScale = 1;
+        var originalWidth;
+        var boardWidth;
+        var boardHeight;
+        var memeDiameter;
+        var gameFrameWidth;
+        var gameFrameHeight;
+        var boardSeparetorXMiddle;
+        var boardSeparetorXSide;
+        var boardSeparetorYMiddle;
+        var boardSeparetorYSide;
+
+        //Game Elements Positions
+        var gameFrameLeft;
+        var gameFrameTop;
+        var boardTop;
+        var px;
+
+        //Assignement Elements Dimensions and Positions
+        function InitilizeStyles() {
+            //Game Elements Dimensions
+            originalWidth = 640;
+            boardWidth = GameScale * originalWidth;
+            boardHeight = 0.75 * boardWidth;
+            memeDiameter = 0.109375 * boardWidth;
+            gameFrameWidth = boardWidth;
+            gameFrameHeight = boardHeight + memeDiameter;
+            boardSeparetorXMiddle = 0.03125 * boardWidth;
+            boardSeparetorXSide = 1.5 * boardSeparetorXMiddle / 2;
+            boardSeparetorYMiddle = boardSeparetorXMiddle / 2;
+            boardSeparetorYSide = boardSeparetorYMiddle / 2;
+
+            //Game Elements Positions
+            gameFrameLeft = 670 - GameScale * originalWidth / 2;
+            gameFrameTop = 270 - GameScale * originalWidth * 0.75 / 2;
+            boardTop = memeDiameter;
+            px = 'px';
+
+            gameFrame.style.position = Board.style.position = PrePlayMeme.style.position = "absolute";
+            gameFrame.style.width = gameFrameWidth + px;
+            gameFrame.style.height = gameFrameHeight + px;
+            gameFrame.style.left = gameFrameLeft + px;
+            gameFrame.style.top = gameFrameTop + px;
+            Board.height = boardHeight;
+            Board.width = boardWidth;
+            Board.style.top = boardTop + px;
+            PrePlayMeme.width = PrePlayMeme.height = memeDiameter;
+            PrePlayMeme.style.left = (CurrentColumn + 1) * boardSeparetorXSide + px;
+            for (var i = 0; i < 7; i++) {
+                var column = document.createElement('div');
+                column.id = i;
+                column.className = "clmn";
+                column.style.position = "absolute";
+                column.style.left = boardSeparetorXSide + i * (boardSeparetorXMiddle + memeDiameter) + px;
+                column.style.width = memeDiameter + px;
+                column.style.height = gameFrameHeight + px;
+                column.onmouseover = MovePreMemeByMouse;
+                column.onclick = DropMeme;
+                gameFrame.appendChild(column);
+            }
+        }
+
+        function DropMeme() {
+            if (CurrentColumnHasEmptyCells() && cawitch == 0) {
+                row = BackBoard[CurrentColumn].push(parseInt(PrePlayMeme.getAttribute("src")));
+                DrawMeme(row);
+                ChangePrePlayMeme();
+            }
+        }
+        function CurrentColumnHasEmptyCells() {
+            return !(BackBoard[CurrentColumn][5] > 0);
+        }
+        function DrawMeme(row) {
+            var currentDiv = document.getElementById(CurrentColumn);
+            droppedMeme = document.createElement('img');
+            droppedMeme.id = CurrentColumn.toString() + row.toString();
+            droppedMeme.className = "cell";
+            droppedMeme.src = PrePlayMeme.src;
+            droppedMeme.style.position = "absolute";
+            droppedMeme.style.zIndex = -1;
+            droppedMeme.style.width = droppedMeme.style.height = memeDiameter + px;
+            currentDiv.appendChild(droppedMeme);
+            //droppedMeme.onmouseover = droppedMeme.parentElement.onmouseover;
+            droppedMeme.onmouseover = MovePreMemeByMouse;
+
+            mover = setInterval(MD, 1);
+        }
+        function MD() {
+            var y = boardSeparetorYSide + memeDiameter + (6 - row) * (boardSeparetorYMiddle + memeDiameter);
+            if (parseInt(droppedMeme.style.top) > y) {
+                clearInterval(mover);
+                cawitch = 0;
+                droppedMeme.style.top = y + px;
+                DroppingSound.play();
+            }
+            else {
+                droppedMeme.style.top = cawitch + px;
+                cawitch += 3;
+            }
+        }
+        function ChangePrePlayMeme() {
+            if (PrePlayMeme.getAttribute("src") == '2') { PrePlayMeme.src = '1'; }
+            else { PrePlayMeme.src = '2'; }
+        }
+
+        //Moving PrePlay Meme
+        function MovePreMemeByMouse() {
+            CurrentColumn = parseInt(event.srcElement.id.substr(0, 1));
+            MoveMeme();
+        }
+        function MovePrePlayMemeByArrows() {
+            switch (event.keyCode) {
+                case 37:
+                case 39:
+                    CurrentColumn += event.keyCode - 38;
+                    break;
+                case 13:
+                case 40:
+				case 32:
+                    DropMeme();
+                    break;
+			}
+            MoveMeme();
+        }
+        function MoveMeme() {
+            //if (CurrentColumn > 6) CurrentColumn = 0;
+            //if (CurrentColumn < 0) CurrentColumn = 6;
+            if (CurrentColumn < 0 || CurrentColumn > 6) CurrentColumn -= 7 * (CurrentColumn / Math.abs(CurrentColumn));
+            PrePlayMeme.style.left = (CurrentColumn) * (boardSeparetorXMiddle + memeDiameter) + boardSeparetorXSide + px;
+        }
+
+        function ChangeGameScale() {
+            GameScale = sldrGameScale.value / 100;
+            InitilizeStyles();
+        }
+    </script>
+</body>
+</html>
